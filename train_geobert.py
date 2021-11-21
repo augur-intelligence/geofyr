@@ -3,12 +3,13 @@ from transformers import DistilBertTokenizerFast, DistilBertConfig, DistilBertFo
 from transformers import Trainer, TrainingArguments, AdamW
 from torch import nn
 import torch
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 from transformers import AdamW
 from datetime import datetime as dt
 from utils.utils import *
 import webdataset as wds
+from tensorboardX import SummaryWriter
 
 ## MODEL
 BASE_MODEL = 'distilbert-base-uncased'
@@ -17,9 +18,11 @@ MAX_SEQ_LENGTH = 500
 NUM_LABELS = 2
 TRAIN_BATCH_SIZE = 16
 TEST_BATCH_SIZE = 4
+NEPOCHS = 15
 LOSS = 'huber'
 DATE = str(dt.now().date())
 LOGSTR = f"{DATE}_model-{TOKEN_MODEL}_loss-{LOSS}"
+CHECKPOINT = '2021-11-20_model-distilbert-base-uncased_loss-huber_epoch-0'
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -27,12 +30,21 @@ config = DistilBertConfig()
 config.num_labels = NUM_LABELS
 config.max_position_embeddings = MAX_SEQ_LENGTH
 
-model = DistilBertForSequenceClassification(config).from_pretrained(BASE_MODEL)
-model = nn.DataParallel(model)
+model = DistilBertForSequenceClassification(config).from_pretrained(CHECKPOINT)
+# model = nn.DataParallel(model)
 model.to(device)
 
-train_dataset = wds.WebDataset('https://storage.googleapis.com/geobert/data/train_geo_wds.tar').decode('torch')
-test_dataset = wds.WebDataset('https://storage.googleapis.com/geobert/data/test_geo_wds.tar').decode('torch')
+signed_train_url = generate_signed_url(CRED_PATH, 'geobert', 'data/train_geo_wds.tar')
+signed_test_url = generate_signed_url(CRED_PATH, 'geobert', 'data/test_geo_wds.tar')
+
+train_dataset = (wds
+                 .WebDataset(signed_train_url)
+                 .repeat(nepochs=NEPOCHS)
+                 .decode('torch'))
+test_dataset = (wds
+                .WebDataset(signed_test_url)
+                .repeat()
+                .decode('torch'))
 
 train_loader = iter(DataLoader(train_dataset, batch_size=TRAIN_BATCH_SIZE, num_workers=1))
 test_loader = iter(DataLoader(test_dataset, batch_size=TEST_BATCH_SIZE, num_workers=1))
@@ -43,8 +55,9 @@ writer = SummaryWriter(log_dir="gs://geobert/logs")
 
 losses = []
 iteration = 0
-for epoch in list(range(0,15)):
+for epoch in list(range(1,NEPOCHS)):
     for files in train_loader:
+        iteration +=1
         batch = files['enc_dict.pyd']
         model.train()
         optim.zero_grad()
@@ -67,7 +80,11 @@ for epoch in list(range(0,15)):
             val_input_ids = val_batch['input_ids'].to(device)
             val_attention_mask = val_batch['attention_mask'].to(device)
             val_labels = val_batch['labels'].to(device)
-            val_outputs = model(val_input_ids, attention_mask=val_attention_mask, labels=val_labels, output_hidden_states=True)
+            val_outputs = model(
+                val_input_ids, 
+                attention_mask=val_attention_mask, 
+                labels=val_labels, 
+                output_hidden_states=True)
             val_logits = val_outputs.get('logits')
             val_loss = loss_fct(val_logits, val_labels)
             val_loss_float = float(val_loss)
@@ -78,10 +95,10 @@ for epoch in list(range(0,15)):
             train_loss_float, 
             val_loss_float
         ])
-        print(f"TRAIN: {train_loss_float:.3f}, VAL: {val_loss_float:.3f}")
+        print(f"E:{epoch:3d}, I:{iteration:8d}TRAIN: {train_loss_float:10.3f}, VAL: {val_loss_float:10.3f}")
         writer.add_scalar(LOGSTR + "-train", train_loss_float, iteration)
         writer.add_scalar(LOGSTR + "-test", val_loss_float, iteration)
-        iteration +=1
+        
         
     MODELDIR = LOGSTR + f"_epoch-{epoch}"
     model.save_pretrained(MODELDIR)
