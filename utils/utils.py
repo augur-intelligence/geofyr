@@ -2,6 +2,8 @@ import torch
 from torch import cos, sin, arccos,arcsin, mean
 import os
 import gcsfs
+from requests import get
+import numpy as np
 
 # Storage
 CRED_PATH = "/".join([os.getcwd(), 'utils', 'storage.json'])
@@ -9,10 +11,30 @@ fs = gcsfs.GCSFileSystem(token=CRED_PATH)
 storage_options={"token": CRED_PATH}
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CRED_PATH
 
+# Operation
+PREEMPT_URL = "http://metadata.google.internal/computeMetadata/v1/instance/preempted"
+PREEMPT_HEADER = {"Metadata-Flavor" : "Google"}
+
+def save_model(model, model_path):
+    torch.save(model, model_path)
+    fs.upload(f'{model_path}/*', f"gs://geobert/checkpoints/{model_path}")
+    
+    
+def handle_preempt(model, model_path):
+    resp_text= get(PREEMPT_URL, headers=PREEMPT_HEADER).text
+    if resp_text == 'FALSE':
+        return False
+    elif resp_text == 'TRUE':
+        save_model(model, model_path)
+        fs.upload(f'{model_path}/*', f"gs://geobert/checkpoints/{model_path}")
+        return True
+    
+
 # Constants
 PI = torch.acos(torch.zeros(1)).item() * 2
 EARTH_RADIUS = 6371
 DEG2RAD = PI/180
+
 
 class GEODataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels):
@@ -151,3 +173,54 @@ def generate_signed_url(service_account_file, bucket_name, object_name,
         scheme_and_host, canonical_uri, canonical_query_string, signature)
 
     return signed_url
+
+
+class EarlyStopping:
+    """Early stops the training if validation loss doesn't improve after a given patience."""
+    def __init__(self, patience=7, verbose=False, delta=0, path='checkpoint.pt', trace_func=print):
+        """
+        Args:
+            patience (int): How long to wait after last time validation loss improved.
+                            Default: 7
+            verbose (bool): If True, prints a message for each validation loss improvement. 
+                            Default: False
+            delta (float): Minimum change in the monitored quantity to qualify as an improvement.
+                            Default: 0
+            path (str): Path for the checkpoint to be saved to.
+                            Default: 'checkpoint.pt'
+            trace_func (function): trace print function.
+                            Default: print            
+        """
+        self.patience = patience
+        self.verbose = verbose
+        self.counter = 0
+        self.best_score = None
+        self.early_stop = False
+        self.val_loss_min = np.Inf
+        self.delta = delta
+        self.path = path
+        self.trace_func = trace_func
+    def __call__(self, val_loss, model):
+
+        score = -val_loss
+
+        if self.best_score is None:
+            self.best_score = score
+            self.save_checkpoint(val_loss, model)
+        elif score < self.best_score + self.delta:
+            self.counter += 1
+            self.trace_func(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            self.best_score = score
+            self.save_checkpoint(val_loss, model)
+            self.counter = 0
+
+    def save_checkpoint(self, val_loss, model):
+        '''Saves model when validation loss decrease.'''
+        if self.verbose:
+            self.trace_func(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+        torch.save(model, self.path)
+        fs.upload(self.path, f"gs://geobert/{self.path}")
+        self.val_loss_min = val_loss
