@@ -41,11 +41,9 @@ signed_test_url = generate_signed_url(CRED_PATH, 'geobert', 'data/test_geo_wds.t
 
 train_dataset = (wds
                  .WebDataset(signed_train_url)
-                 .repeat(nepochs=NEPOCHS)
                  .decode('torch'))
 test_dataset = (wds
                 .WebDataset(signed_test_url)
-                .repeat(nepochs=NEPOCHS)
                 .decode('torch'))
 
 train_loader = iter(DataLoader(train_dataset, batch_size=TRAIN_BATCH_SIZE, num_workers=1))
