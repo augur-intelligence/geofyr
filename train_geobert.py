@@ -36,16 +36,6 @@ model = DistilBertForSequenceClassification(config).from_pretrained(CHECKPOINT)
 # model = nn.DataParallel(model)
 model.to(device)
 
-signed_train_url = generate_signed_url(CRED_PATH, 'geobert', 'data/train_geo_wds.tar')
-signed_test_url = generate_signed_url(CRED_PATH, 'geobert', 'data/test_geo_wds.tar')
-
-train_dataset = (wds
-                 .WebDataset(signed_train_url)
-                 .decode('torch'))
-test_dataset = (wds
-                .WebDataset(signed_test_url)
-                .decode('torch'))
-
 train_loader = iter(DataLoader(train_dataset, batch_size=TRAIN_BATCH_SIZE, num_workers=1))
 test_loader = iter(DataLoader(test_dataset, batch_size=TEST_BATCH_SIZE, num_workers=1))
 optim = AdamW(model.parameters(), lr=5e-5)
@@ -57,6 +47,12 @@ for epoch in range(0,NEPOCHS):
     train_losses = []
     val_losses = []
     # Train in epoch
+    # Train data process
+    logging.info(f"Load training data.")
+    signed_train_url = generate_signed_url(CRED_PATH, 'geobert', 'data/train_geo_wds.tar')
+    train_dataset = (wds
+                     .WebDataset(signed_train_url)
+                     .decode('torch'))
     logging.info(f"Starting training.")
     model.train()
     for iteration, files in enumerate(train_loader):
@@ -83,6 +79,11 @@ for epoch in range(0,NEPOCHS):
 
         
     # Eval in epoch
+    # Test data process
+    signed_test_url = generate_signed_url(CRED_PATH, 'geobert', 'data/test_geo_wds.tar')
+    test_dataset = (wds
+                    .WebDataset(signed_test_url)
+                    .decode('torch'))
     logging.info(f"Starting evaluation.")
     model.eval()
     with torch.no_grad():
