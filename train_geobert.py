@@ -36,8 +36,6 @@ model = DistilBertForSequenceClassification(config).from_pretrained(CHECKPOINT)
 # model = nn.DataParallel(model)
 model.to(device)
 
-train_loader = iter(DataLoader(train_dataset, batch_size=TRAIN_BATCH_SIZE, num_workers=1))
-test_loader = iter(DataLoader(test_dataset, batch_size=TEST_BATCH_SIZE, num_workers=1))
 optim = AdamW(model.parameters(), lr=5e-5)
 writer = SummaryWriter(log_dir="gs://geobert/logs")
 early_stopping = EarlyStopping(patience=5, verbose=True, path=CHECKPOINT_DIR, trace_func=logging.info)
@@ -53,6 +51,7 @@ for epoch in range(0,NEPOCHS):
     train_dataset = (wds
                      .WebDataset(signed_train_url)
                      .decode('torch'))
+    train_loader = iter(DataLoader(train_dataset, batch_size=TRAIN_BATCH_SIZE, num_workers=1))
     logging.info(f"Starting training.")
     model.train()
     for iteration, files in enumerate(train_loader):
@@ -84,6 +83,7 @@ for epoch in range(0,NEPOCHS):
     test_dataset = (wds
                     .WebDataset(signed_test_url)
                     .decode('torch'))
+    test_loader = iter(DataLoader(test_dataset, batch_size=TEST_BATCH_SIZE, num_workers=1))
     logging.info(f"Starting evaluation.")
     model.eval()
     with torch.no_grad():
