@@ -33,7 +33,7 @@ config.num_labels = NUM_LABELS
 config.max_position_embeddings = MAX_SEQ_LENGTH
 
 model = DistilBertForSequenceClassification(config).from_pretrained(CHECKPOINT)
-# model = nn.DataParallel(model)
+model = nn.DataParallel(model)
 model.to(device)
 
 optim = AdamW(model.parameters(), lr=5e-5)
@@ -104,7 +104,7 @@ for epoch in range(0,NEPOCHS):
                 val_loss_float = float(val_loss)
                 val_losses.append(val_loss_float)
                 writer.add_scalar(LOGSTR + "-test", val_loss_float, iteration)
-                logging.info(f"E:{epoch:3d}, I:{iteration:8d} TEST: {train_loss_float:10.3f}")        
+                logging.info(f"E:{epoch:3d}, I:{iteration:8d} TEST: {val_loss_float:10.3f}")        
                 del val_input_ids, val_attention_mask, val_labels, val_logits, val_loss
             except Exception as e:
                 logging.exception(e)
