@@ -21,15 +21,16 @@ BASE_MODEL = 'distilbert-base-uncased'
 TOKEN_MODEL = 'distilbert-base-uncased'
 MAX_SEQ_LENGTH = 200
 NUM_LABELS = 2
-TRAIN_BATCH_SIZE = 1
-TEST_BATCH_SIZE = 1
+TRAIN_BATCH_SIZE = 40
+TEST_BATCH_SIZE = 40
 NEPOCHS = 40
 TEXTBATCHES = 2000
-LOSS = 'huber'
+INFO = 'wiki_exploded_geonames'
 DATE = str(dt.now().date())
-LOGSTR = f"{DATE}_model-{TOKEN_MODEL}_loss-{LOSS}"
+LOGSTR = f"{DATE}_model-{TOKEN_MODEL}_loss-{INFO}"
 CHECKPOINT = TOKEN_MODEL
 CHECKPOINT_DIR = Path(f"checkpoints/{LOGSTR}")
+CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
 ## PREP DATA LOADERS
 df = pd.read_parquet("data/geo_data.parquet")
@@ -46,12 +47,13 @@ test_dataset = StreamTokenizedDataset(x_test, y_test, tokenizer, TEXTBATCHES, MA
 val_dataset = StreamTokenizedDataset(x_val, y_val, tokenizer, TEXTBATCHES, MAX_SEQ_LENGTH)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-config = DistilBertConfig()
+config = DistilBertConfig().from_pretrained(CHECKPOINT)
 config.num_labels = NUM_LABELS
-config.max_position_embeddings = MAX_SEQ_LENGTH
+# config.max_position_embeddings = MAX_SEQ_LENGTH
 
-model = DistilBertForSequenceClassification(config).from_pretrained(CHECKPOINT)
-model = nn.DataParallel(model)
+model = DistilBertForSequenceClassification.from_pretrained(CHECKPOINT, config=config)
+model.config.max_position_embeddings = MAX_SEQ_LENGTH
+# model = nn.DataParallel(model)
 model.to(device)
 
 optim = AdamW(model.parameters(), lr=5e-5)
