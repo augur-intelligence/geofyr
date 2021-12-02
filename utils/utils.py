@@ -49,6 +49,29 @@ class GEODataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.labels)
     
+class StreamTokenizedDataset(torch.utils.data.Dataset):
+    def __init__(self, texts, labels, tokenizer, batchsize, max_seq_length):
+        self.texts = texts
+        self.labels = labels
+        self.tokenizer = tokenizer
+        self.batchsize = batchsize
+        self.max_seq_length = max_seq_length
+        self.batch = None
+
+    def __getitem__(self, idx):
+        self.requested_batch = int(idx/self.batchsize)
+        if self.requested_batch != self.batch:
+            self.batch = int(idx/self.batchsize)
+            self.current_texts = self.texts[self.batchsize * self.batch: self.batchsize * self.batch + self.batchsize]
+            self.encodings = self.tokenizer(self.current_texts, truncation=True, padding=True, max_length=self.max_seq_length)
+
+        item = {key: torch.tensor(val[idx % self.batchsize]) for key, val in self.encodings.items()}
+        item['labels'] = torch.tensor(self.labels[idx], dtype=torch.float)
+        return item
+
+    def __len__(self):
+        return len(self.labels)
+    
 def haversine_dist(logits, labels):
     ## phi = lat = index 0, lambda = lon = index 1
     labels = DEG2RAD * labels
