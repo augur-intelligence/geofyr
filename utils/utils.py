@@ -18,8 +18,8 @@ PREEMPT_HEADER = {"Metadata-Flavor" : "Google"}
 def save_model(model, model_path):
     torch.save(model, model_path)
     fs.upload(f'{model_path}/*', f"gs://geobert/checkpoints/{model_path}")
-    
-    
+
+
 def handle_preempt(model, model_path):
     resp_text= get(PREEMPT_URL, headers=PREEMPT_HEADER).text
     if resp_text == 'FALSE':

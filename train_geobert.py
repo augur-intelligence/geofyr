@@ -12,7 +12,7 @@ from tensorboardX import SummaryWriter
 import logging
 from sklearn.model_selection import train_test_split
 from pathlib import Path
-LOGDIR = Path("logs") 
+LOGDIR = Path("logs")
 LOGDIR.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOGDIR.joinpath("train.log"),  level=logging.DEBUG)
 
@@ -46,20 +46,25 @@ train_dataset = StreamTokenizedDataset(x_train, y_train, tokenizer, TEXTBATCHES,
 test_dataset = StreamTokenizedDataset(x_test, y_test, tokenizer, TEXTBATCHES, MAX_SEQ_LENGTH)
 val_dataset = StreamTokenizedDataset(x_val, y_val, tokenizer, TEXTBATCHES, MAX_SEQ_LENGTH)
 
+## INIT MODEL
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-config = DistilBertConfig().from_pretrained(CHECKPOINT)
-config.num_labels = NUM_LABELS
-# config.max_position_embeddings = MAX_SEQ_LENGTH
-
-model = DistilBertForSequenceClassification.from_pretrained(CHECKPOINT, config=config)
+model = DistilBertForSequenceClassification.from_pretrained(CHECKPOINT)
 model.config.max_position_embeddings = MAX_SEQ_LENGTH
+model.num_labels = NUM_LABELS
 # model = nn.DataParallel(model)
 model.to(device)
+torch.save(model, CHECKPOINT_DIR.joinpath("model.pt"))
 
+## INIT HELPERS
 optim = AdamW(model.parameters(), lr=5e-5)
 writer = SummaryWriter(log_dir="gs://geobert/logs")
-early_stopping = EarlyStopping(patience=5, verbose=True, path=CHECKPOINT_DIR, trace_func=logging.info)
+early_stopping = EarlyStopping(
+    patience=5,
+    verbose=True,
+    path=CHECKPOINT_DIR.joinpath("model.pt"),
+    trace_func=logging.info)
 
+## START TRAINING
 for epoch in range(0,NEPOCHS):
     ###############
     # Start epoch #
@@ -116,9 +121,9 @@ for epoch in range(0,NEPOCHS):
             val_loss_float = float(val_loss)
             val_losses.append(val_loss_float)
             writer.add_scalar(LOGSTR + "-test", val_loss_float, iteration)
-            logging.info(f"E:{epoch:3d}, I:{iteration:8d} TEST: {val_loss_float:10.3f}")        
+            logging.info(f"E:{epoch:3d}, I:{iteration:8d} TEST: {val_loss_float:10.3f}")
             del val_input_ids, val_attention_mask, val_labels, val_logits, val_loss
-            
+
     ################
     # Finish epoch #
     ################
@@ -128,10 +133,10 @@ for epoch in range(0,NEPOCHS):
     writer.add_scalar(LOGSTR + "-test_epoch", avg_val_loss, epoch)
     logging.info(f"E:{epoch:3d}, TRAIN: {avg_train_loss:10.3f}, TEST: {avg_val_loss:10.3f}")
     early_stopping(val_loss=avg_val_loss, model=model)
-        
+
     if early_stopping.early_stop:
         logging.info("Early stopping")
         break
-        
+
 logging.info(f"Training finished in epoch {epoch}")    
 model.eval()
