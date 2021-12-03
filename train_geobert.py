@@ -54,6 +54,8 @@ model.num_labels = NUM_LABELS
 # model = nn.DataParallel(model)
 model.to(device)
 torch.save(model, CHECKPOINT_DIR.joinpath("model.pt"))
+GS_PATH = "gs://geobert/" + str(CHECKPOINT_DIR.joinpath("model.pt"))
+fs.upload(str(CHECKPOINT_DIR.joinpath("model.pt")), str(GS_PATH))
 
 ## INIT HELPERS
 optim = AdamW(model.parameters(), lr=5e-5)
@@ -65,7 +67,7 @@ early_stopping = EarlyStopping(
     trace_func=logging.info)
 
 ## START TRAINING
-for epoch in range(0,NEPOCHS):
+for epoch in range(0, NEPOCHS):
     ###############
     # Start epoch #
     ###############

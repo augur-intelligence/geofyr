@@ -245,5 +245,5 @@ class EarlyStopping:
         if self.verbose:
             self.trace_func(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         torch.save(model, self.path)
-        fs.upload(self.path, f"gs://geobert/{self.path}")
+        fs.upload(str(self.path), f"gs://geobert/" + str(self.path))
         self.val_loss_min = val_loss
