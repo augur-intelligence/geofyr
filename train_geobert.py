@@ -33,7 +33,7 @@ CHECKPOINT_DIR = Path(f"checkpoints/{LOGSTR}")
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
 ## PREP DATA LOADERS
-df = pd.read_parquet("data/wiki_exploded.gz")
+df = pd.read_csv("data/wiki_exploded.gz")
 texts = df["text"].values.tolist()
 labels = df[["lat",  "lon"]].astype(float).values.tolist()
 train_ratio = 0.78
@@ -83,6 +83,8 @@ for epoch in range(0, NEPOCHS):
     logging.info(f"Starting training.")
     model.train()
     for iteration, batch in enumerate(train_loader):
+        if iteration == 50:
+            break
         optim.zero_grad()
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
@@ -109,6 +111,8 @@ for epoch in range(0, NEPOCHS):
     model.eval()
     with torch.no_grad():
         for iteration, val_batch in enumerate(test_loader):
+            if iteration == 50:
+                break
             val_input_ids = val_batch['input_ids'].to(device)
             val_attention_mask = val_batch['attention_mask'].to(device)
             val_labels = val_batch['labels'].to(device)
