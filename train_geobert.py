@@ -83,8 +83,6 @@ for epoch in range(0, NEPOCHS):
     logging.info(f"Starting training.")
     model.train()
     for iteration, batch in enumerate(train_loader):
-        if iteration == 50:
-            break
         optim.zero_grad()
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
@@ -111,8 +109,6 @@ for epoch in range(0, NEPOCHS):
     model.eval()
     with torch.no_grad():
         for iteration, val_batch in enumerate(test_loader):
-            if iteration == 50:
-                break
             val_input_ids = val_batch['input_ids'].to(device)
             val_attention_mask = val_batch['attention_mask'].to(device)
             val_labels = val_batch['labels'].to(device)
