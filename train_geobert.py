@@ -33,7 +33,7 @@ CHECKPOINT_DIR = Path(f"checkpoints/{LOGSTR}")
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
 ## PREP DATA LOADERS
-df = pd.read_csv("data/wiki_exploded.gz")
+df = pd.read_csv("data/wiki_exploded.gz").dropna()
 texts = df["text"].values.tolist()
 labels = df[["lat",  "lon"]].astype(float).values.tolist()
 train_ratio = 0.78
