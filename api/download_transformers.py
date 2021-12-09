@@ -1,0 +1,3 @@
+from transformers import DistilBertTokenizerFast
+from model import TOKEN_MODEL
+DistilBertTokenizerFast.from_pretrained(TOKEN_MODEL)

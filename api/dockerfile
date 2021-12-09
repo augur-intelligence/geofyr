@@ -1,0 +1,19 @@
+FROM python:3.9-slim-bullseye
+
+WORKDIR /
+
+COPY reqs.txt .
+
+RUN pip install -r reqs.txt
+
+COPY *.py .
+
+RUN mkdir model
+
+COPY model/model.pt ./model/
+
+RUN python3 download_transformers.py
+
+EXPOSE 8080
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
