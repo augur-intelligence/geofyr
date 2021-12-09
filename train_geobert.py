@@ -1,6 +1,7 @@
 import pandas as pd
-from transformers import DistilBertTokenizerFast, DistilBertConfig, DistilBertForSequenceClassification
-from transformers import Trainer, TrainingArguments, AdamW
+# from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
+from transformers import BertTokenizerFast, BertForSequenceClassification
+from transformers import AdamW
 from torch import nn
 import torch
 from torch.utils.data import DataLoader
@@ -17,8 +18,11 @@ LOGDIR.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOGDIR.joinpath("train.log"),  level=logging.DEBUG)
 
 ## MODEL PARAMS
-BASE_MODEL = 'distilbert-base-uncased'
-TOKEN_MODEL = 'distilbert-base-uncased'
+BASE_MODEL = 'bert-base-uncased'
+TOKEN_MODEL = 'bert-base-uncased'
+ModelClass = BertForSequenceClassification
+TokenizerClass = BertTokenizerFast
+
 MAX_SEQ_LENGTH = 200
 NUM_LABELS = 2
 TRAIN_BATCH_SIZE = 100
@@ -41,14 +45,14 @@ test_ratio = 0.17
 validation_ratio = 0.5
 x_train, x_test, y_train, y_test = train_test_split(texts, labels, test_size=1 - train_ratio)
 x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=test_ratio/(test_ratio + validation_ratio)) 
-tokenizer = DistilBertTokenizerFast.from_pretrained(TOKEN_MODEL)
+tokenizer = TokenizerClass.from_pretrained(TOKEN_MODEL)
 train_dataset = StreamTokenizedDataset(x_train, y_train, tokenizer, TEXTBATCHES, MAX_SEQ_LENGTH)
 test_dataset = StreamTokenizedDataset(x_test, y_test, tokenizer, TEXTBATCHES, MAX_SEQ_LENGTH)
 val_dataset = StreamTokenizedDataset(x_val, y_val, tokenizer, TEXTBATCHES, MAX_SEQ_LENGTH)
 
 ## INIT MODEL
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = DistilBertForSequenceClassification.from_pretrained(CHECKPOINT)
+model = ModelClass.from_pretrained(CHECKPOINT)
 model.config.max_position_embeddings = MAX_SEQ_LENGTH
 model.num_labels = NUM_LABELS
 # model = nn.DataParallel(model)
