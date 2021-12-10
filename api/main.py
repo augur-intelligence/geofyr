@@ -55,7 +55,7 @@ async def root():
     
 
 @app.post("/inference/point", response_model = PointResponse)
-async def inference_point(request: GeoRequest, api_key: APIKey = Depends(get_api_key)):
+def inference_point(request: GeoRequest, api_key: APIKey = Depends(get_api_key)):
     '''
     Infers the geographic location of a given text as a single point.
     For security reasons this endpoint only accepts the text as encrypted SSL payload. 
