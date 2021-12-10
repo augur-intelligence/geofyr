@@ -51,7 +51,7 @@ def inference_point(request: GeoRequest,
                     ):
     '''
     Infers the geographic location of a given text as a single point.
-    For security reasons this endpoint only accepts the text as encrypted SSL payload. 
+    For security reasons this endpoint only accepts the text as encrypted SSL payload.
     '''
     # Split text to tokens
     split_text = request.text.split(" ")
