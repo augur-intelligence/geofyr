@@ -4,6 +4,14 @@ import os
 import gcsfs
 from requests import get
 import numpy as np
+import binascii
+import collections
+import datetime
+import hashlib
+import sys
+from google.oauth2 import service_account
+import six
+from six.moves.urllib.parse import quote
 
 # Storage
 CRED_PATH = "/".join([os.getcwd(), 'utils', 'storage.json'])
@@ -14,6 +22,11 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CRED_PATH
 # Operation
 PREEMPT_URL = "http://metadata.google.internal/computeMetadata/v1/instance/preempted"
 PREEMPT_HEADER = {"Metadata-Flavor" : "Google"}
+# Constants
+PI = torch.acos(torch.zeros(1)).item() * 2
+EARTH_RADIUS = 6371
+DEG2RAD = PI/180
+
 
 def save_model(model, model_path):
     torch.save(model, model_path)
@@ -28,12 +41,6 @@ def handle_preempt(model, model_path):
         save_model(model, model_path)
         fs.upload(f'{model_path}/*', f"gs://geobert/checkpoints/{model_path}")
         return True
-    
-
-# Constants
-PI = torch.acos(torch.zeros(1)).item() * 2
-EARTH_RADIUS = 6371
-DEG2RAD = PI/180
 
 
 class GEODataset(torch.utils.data.Dataset):
@@ -71,7 +78,8 @@ class StreamTokenizedDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.labels)
-    
+
+
 def haversine_dist(logits, labels):
     ## phi = lat = index 0, lambda = lon = index 1
     labels = DEG2RAD * labels
@@ -97,20 +105,6 @@ def haversine_dist(logits, labels):
     hav_dist = EARTH_RADIUS * d_sigma
     hav_dist_mean = mean(hav_dist)
     return hav_dist_mean
-
-
-
-import binascii
-import collections
-import datetime
-import hashlib
-import sys
-
-# pip install google-auth
-from google.oauth2 import service_account
-# pip install six
-import six
-from six.moves.urllib.parse import quote
 
 
 def generate_signed_url(service_account_file, bucket_name, object_name,

@@ -2,11 +2,11 @@ FROM python:3.9-slim-bullseye
 
 WORKDIR /
 
-COPY reqs.txt .
+COPY reqs.txt ./
 
 RUN pip install -r reqs.txt
 
-COPY *.py .
+COPY *.py ./
 
 RUN mkdir model
 

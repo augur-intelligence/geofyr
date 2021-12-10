@@ -44,7 +44,8 @@ async def get_api_key(
         return api_key_header
     else:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN, detail="Could not validate credentials"
+            status_code=HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials"
         )
         
 
