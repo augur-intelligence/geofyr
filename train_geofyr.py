@@ -1,6 +1,6 @@
 import pandas as pd
-# from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
-from transformers import BertTokenizerFast, BertForSequenceClassification
+from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
+# from transformers import BertTokenizerFast, BertForSequenceClassification
 from transformers import AdamW
 from torch import nn
 import torch
@@ -18,18 +18,18 @@ LOGDIR.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOGDIR.joinpath("train.log"),  level=logging.DEBUG)
 
 ## MODEL PARAMS
-BASE_MODEL = 'bert-base-uncased'
-TOKEN_MODEL = 'bert-base-uncased'
-ModelClass = BertForSequenceClassification
-TokenizerClass = BertTokenizerFast
+BASE_MODEL = 'distilbert-base-cased'
+TOKEN_MODEL = 'distilbert-base-cased'
+ModelClass = DistilBertForSequenceClassification
+TokenizerClass = DistilBertTokenizerFast
 
 MAX_SEQ_LENGTH = 200
 NUM_LABELS = 2
-TRAIN_BATCH_SIZE = 50
-TEST_BATCH_SIZE = 50
+TRAIN_BATCH_SIZE = 100
+TEST_BATCH_SIZE = 100
 NEPOCHS = 40
 TEXTBATCHES = 2000
-INFO = 'wiki_exploded_geonames'
+INFO = 'wiki_cleaned'
 DATE = str(dt.now().date())
 LOGSTR = f"{DATE}_model-{TOKEN_MODEL}_loss-{INFO}"
 CHECKPOINT = TOKEN_MODEL
@@ -37,7 +37,7 @@ CHECKPOINT_DIR = Path(f"checkpoints/{LOGSTR}")
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
 ## PREP DATA LOADERS
-df = pd.read_csv("data/wiki_exploded.gz").dropna()
+df = pd.read_parquet("wiki.parquet").dropna()
 texts = df["text"].values.tolist()
 labels = df[["lat",  "lon"]].astype(float).values.tolist()
 train_ratio = 0.78
@@ -144,5 +144,5 @@ for epoch in range(0, NEPOCHS):
         logging.info("Early stopping")
         break
 
-logging.info(f"Training finished in epoch {epoch}")    
+logging.info(f"Training finished in epoch {epoch}")
 model.eval()
