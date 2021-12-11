@@ -5,7 +5,7 @@ from transformers import AdamW
 from torch import nn
 import torch
 from torch.utils.data import DataLoader
-from transformers import AdamW
+# from transformers import AdamW
 from datetime import datetime as dt
 from utils.utils import *
 import webdataset as wds
@@ -15,11 +15,12 @@ from sklearn.model_selection import train_test_split
 from pathlib import Path
 LOGDIR = Path("logs")
 LOGDIR.mkdir(parents=True, exist_ok=True)
-logging.basicConfig(filename=LOGDIR.joinpath("train.log"),  level=logging.DEBUG)
+logging.basicConfig(filename=LOGDIR.joinpath("train.log"),
+                    level=logging.DEBUG)
 
 ## MODEL PARAMS
-BASE_MODEL = 'distilbert-base-cased'
-TOKEN_MODEL = 'distilbert-base-cased'
+BASE_MODEL = 'distilbert-base-uncased'
+TOKEN_MODEL = 'distilbert-base-uncased'
 ModelClass = DistilBertForSequenceClassification
 TokenizerClass = DistilBertTokenizerFast
 
@@ -43,12 +44,29 @@ labels = df[["lat",  "lon"]].astype(float).values.tolist()
 train_ratio = 0.78
 test_ratio = 0.17
 validation_ratio = 0.5
-x_train, x_test, y_train, y_test = train_test_split(texts, labels, test_size=1 - train_ratio)
-x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=test_ratio/(test_ratio + validation_ratio)) 
+x_train, x_test, y_train, y_test = train_test_split(texts,
+                                                    labels,
+                                                    test_size=1 - train_ratio)
+x_test, x_val, y_test, y_val = train_test_split(x_test,
+                                                y_test,
+                                                test_size=test_ratio/(test_ratio + validation_ratio)) 
+
 tokenizer = TokenizerClass.from_pretrained(TOKEN_MODEL)
-train_dataset = StreamTokenizedDataset(x_train, y_train, tokenizer, TEXTBATCHES, MAX_SEQ_LENGTH)
-test_dataset = StreamTokenizedDataset(x_test, y_test, tokenizer, TEXTBATCHES, MAX_SEQ_LENGTH)
-val_dataset = StreamTokenizedDataset(x_val, y_val, tokenizer, TEXTBATCHES, MAX_SEQ_LENGTH)
+train_dataset = StreamTokenizedDataset(x_train,
+                                       y_train,
+                                       tokenizer,
+                                       TEXTBATCHES,
+                                       MAX_SEQ_LENGTH)
+test_dataset = StreamTokenizedDataset(x_test,
+                                      y_test,
+                                      tokenizer,
+                                      TEXTBATCHES,
+                                      MAX_SEQ_LENGTH)
+val_dataset = StreamTokenizedDataset(x_val,
+                                     y_val,
+                                     tokenizer,
+                                     TEXTBATCHES,
+                                     MAX_SEQ_LENGTH)
 
 ## INIT MODEL
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -83,7 +101,9 @@ for epoch in range(0, NEPOCHS):
     ##################
     ### Train data process
     logging.info(f"Load training data.")
-    train_loader = iter(DataLoader(train_dataset, batch_size=TRAIN_BATCH_SIZE, num_workers=1))
+    train_loader = iter(DataLoader(train_dataset,
+                                   batch_size=TRAIN_BATCH_SIZE,
+                                   num_workers=1))
     logging.info(f"Starting training.")
     model.train()
     for iteration, batch in enumerate(train_loader):
@@ -91,7 +111,10 @@ for epoch in range(0, NEPOCHS):
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
         labels = batch['labels'].to(device)
-        outputs = model(input_ids, attention_mask=attention_mask, labels=labels, output_hidden_states=True)
+        outputs = model(input_ids,
+                        attention_mask=attention_mask,
+                        labels=labels,
+                        output_hidden_states=True)
         logits = outputs.get('logits')
         loss_fct = nn.HuberLoss()
         train_loss = loss_fct(logits, labels)
@@ -100,7 +123,9 @@ for epoch in range(0, NEPOCHS):
         ### Logging
         train_loss_float = float(train_loss) 
         train_losses.append(train_loss_float)
-        writer.add_scalar(LOGSTR + "-train", train_loss_float, iteration)
+        writer.add_scalar(LOGSTR + "-train",
+                          train_loss_float,
+                          iteration)
         logging.info(f"E:{epoch:3d}, I:{iteration:8d} TRAIN: {train_loss_float:10.3f}")
         del input_ids, attention_mask, labels, logits, train_loss
 
@@ -108,7 +133,9 @@ for epoch in range(0, NEPOCHS):
     # Eval in epoch #
     #################
     ### Test data process
-    test_loader = iter(DataLoader(test_dataset, batch_size=TEST_BATCH_SIZE, num_workers=1))
+    test_loader = iter(DataLoader(test_dataset,
+                                  batch_size=TEST_BATCH_SIZE,
+                                  num_workers=1))
     logging.info(f"Starting evaluation.")
     model.eval()
     with torch.no_grad():
@@ -126,7 +153,9 @@ for epoch in range(0, NEPOCHS):
             ### Logging
             val_loss_float = float(val_loss)
             val_losses.append(val_loss_float)
-            writer.add_scalar(LOGSTR + "-test", val_loss_float, iteration)
+            writer.add_scalar(LOGSTR + "-test",
+                              val_loss_float,
+                              iteration)
             logging.info(f"E:{epoch:3d}, I:{iteration:8d} TEST: {val_loss_float:10.3f}")
             del val_input_ids, val_attention_mask, val_labels, val_logits, val_loss
 
