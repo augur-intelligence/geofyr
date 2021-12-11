@@ -3,3 +3,5 @@ transformers
 tensorboardX
 webdataset
 gcsfs
+pyarrow
+fastparquet
