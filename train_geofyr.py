@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 # from transformers import AdamW
 from datetime import datetime as dt
 from utils.utils import *
-import webdataset as wds
+# import webdataset as wds
 from tensorboardX import SummaryWriter
 import logging
 from sklearn.model_selection import train_test_split
@@ -18,7 +18,7 @@ LOGDIR.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOGDIR.joinpath("train.log"),
                     level=logging.DEBUG)
 
-## MODEL PARAMS
+# MODEL PARAMS
 BASE_MODEL = 'distilbert-base-uncased'
 TOKEN_MODEL = 'distilbert-base-uncased'
 ModelClass = DistilBertForSequenceClassification
@@ -30,15 +30,15 @@ TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 100
 NEPOCHS = 40
 TEXTBATCHES = 2000
-INFO = 'wiki_cleaned'
+INFO = 'wiki_utf8_exploded'
 DATE = str(dt.now().date())
 LOGSTR = f"{DATE}_model-{TOKEN_MODEL}_loss-{INFO}"
 CHECKPOINT = TOKEN_MODEL
 CHECKPOINT_DIR = Path(f"checkpoints/{LOGSTR}")
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
-## PREP DATA LOADERS
-df = pd.read_parquet("wiki.parquet").dropna()
+# PREP DATA LOADERS
+df = pd.read_parquet("wiki_utf8_exploded.parquet").dropna()
 texts = df["text"].values.tolist()
 labels = df[["lat",  "lon"]].astype(float).values.tolist()
 train_ratio = 0.78
@@ -68,7 +68,7 @@ val_dataset = StreamTokenizedDataset(x_val,
                                      TEXTBATCHES,
                                      MAX_SEQ_LENGTH)
 
-## INIT MODEL
+# INIT MODEL
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = ModelClass.from_pretrained(CHECKPOINT)
 model.config.max_position_embeddings = MAX_SEQ_LENGTH
@@ -79,7 +79,7 @@ torch.save(model, CHECKPOINT_DIR.joinpath("model.pt"))
 GS_PATH = "gs://geobert/" + str(CHECKPOINT_DIR.joinpath("model.pt"))
 fs.upload(str(CHECKPOINT_DIR.joinpath("model.pt")), str(GS_PATH))
 
-## INIT HELPERS
+# INIT HELPERS
 optim = AdamW(model.parameters(), lr=5e-5)
 writer = SummaryWriter(log_dir="gs://geobert/logs")
 early_stopping = EarlyStopping(
@@ -88,7 +88,7 @@ early_stopping = EarlyStopping(
     path=CHECKPOINT_DIR.joinpath("model.pt"),
     trace_func=logging.info)
 
-## START TRAINING
+# START TRAINING
 for epoch in range(0, NEPOCHS):
     ###############
     # Start epoch #
@@ -132,7 +132,7 @@ for epoch in range(0, NEPOCHS):
     #################
     # Eval in epoch #
     #################
-    ### Test data process
+    # Test data process
     test_loader = iter(DataLoader(test_dataset,
                                   batch_size=TEST_BATCH_SIZE,
                                   num_workers=1))
