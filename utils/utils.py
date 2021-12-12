@@ -1,5 +1,5 @@
 import torch
-from torch import cos, sin, arccos,arcsin, mean
+from torch import cos, sin, arccos,arcsin, mean, sqrt, square
 import os
 import gcsfs
 from requests import get
@@ -55,7 +55,8 @@ class GEODataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.labels)
-    
+
+
 class StreamTokenizedDataset(torch.utils.data.Dataset):
     def __init__(self, texts, labels, tokenizer, batchsize, max_seq_length):
         self.texts = texts
@@ -88,17 +89,17 @@ def haversine_dist(logits, labels):
             sqrt(
                 square(
                     sin(
-                        (logits[:,0]-labels[:,0]) / 2 )
-                ) 
-                + 
-                cos(logits[:,0]) 
-                * 
-                cos(labels[:,0]) 
-                * 
+                        (logits[:, 0]-labels[:, 0]) / 2)
+                )
+                +
+                cos(logits[:, 0])
+                *
+                cos(labels[:, 0])
+                *
                 square(
                     sin(
-                        (logits[:,1]-labels[:,1]) / 2 )
-                ) 
+                        (logits[:, 1]-labels[:, 1]) / 2)
+                )
             )
         )
     )
