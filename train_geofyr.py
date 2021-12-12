@@ -5,7 +5,6 @@ from transformers import AdamW
 from torch import nn
 import torch
 from torch.utils.data import DataLoader
-# from transformers import AdamW
 from datetime import datetime as dt
 from utils.utils import *
 # import webdataset as wds
@@ -36,6 +35,7 @@ LOGSTR = f"{DATE}_model-{TOKEN_MODEL}_loss-{INFO}"
 CHECKPOINT = TOKEN_MODEL
 CHECKPOINT_DIR = Path(f"checkpoints/{LOGSTR}")
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+LOSSFCT = haversine_dist
 
 # PREP DATA LOADERS
 df = pd.read_parquet("wiki_utf8_exploded.parquet").dropna()
@@ -49,7 +49,7 @@ x_train, x_test, y_train, y_test = train_test_split(texts,
                                                     test_size=1 - train_ratio)
 x_test, x_val, y_test, y_val = train_test_split(x_test,
                                                 y_test,
-                                                test_size=test_ratio/(test_ratio + validation_ratio)) 
+                                                test_size=test_ratio/(test_ratio + validation_ratio))
 
 tokenizer = TokenizerClass.from_pretrained(TOKEN_MODEL)
 train_dataset = StreamTokenizedDataset(x_train,
@@ -116,8 +116,7 @@ for epoch in range(0, NEPOCHS):
                         labels=labels,
                         output_hidden_states=True)
         logits = outputs.get('logits')
-        loss_fct = nn.HuberLoss()
-        train_loss = loss_fct(logits, labels)
+        train_loss = LOSSFCT(logits, labels)
         train_loss.backward()
         optim.step()
         ### Logging
@@ -149,7 +148,7 @@ for epoch in range(0, NEPOCHS):
                 labels=val_labels, 
                 output_hidden_states=True)
             val_logits = val_outputs.get('logits')
-            val_loss = loss_fct(val_logits, val_labels)
+            val_loss = LOSSFCT(val_logits, val_labels)
             ### Logging
             val_loss_float = float(val_loss)
             val_losses.append(val_loss_float)
