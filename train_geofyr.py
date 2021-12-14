@@ -43,7 +43,7 @@ TEXTBATCHES = 2000
 DATA_PATH = "geo_data.parquet"
 
 # LOG PARAMS
-INFO = 'haversine-wiki_utf8_exploded'
+INFO = 'haversine-combined-data'
 DATE = str(dt.now().date())
 LOGSTR = f"{DATE}_model-{TOKEN_MODEL}_loss-{INFO}"
 CHECKPOINT = TOKEN_MODEL
