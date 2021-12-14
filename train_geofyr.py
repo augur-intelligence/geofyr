@@ -1,12 +1,19 @@
 import pandas as pd
-from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
+from transformers import (DistilBertTokenizerFast,
+                          DistilBertForSequenceClassification)
 # from transformers import BertTokenizerFast, BertForSequenceClassification
 from transformers import AdamW
 from torch import nn
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from datetime import datetime as dt
-from utils.utils import *
+from utils.utils import (
+    StreamTokenizedDataset,
+    EarlyStopping,
+    fs,
+    haversine_dist
+)
 # import webdataset as wds
 from tensorboardX import SummaryWriter
 import logging
@@ -22,13 +29,19 @@ BASE_MODEL = 'distilbert-base-uncased'
 TOKEN_MODEL = 'distilbert-base-uncased'
 ModelClass = DistilBertForSequenceClassification
 TokenizerClass = DistilBertTokenizerFast
-
 MAX_SEQ_LENGTH = 200
 NUM_LABELS = 2
+
+# TRAIN PARAMS
+TRAIN_RATIO = 0.78
+TEST_RATIO = 0.17
+VALIDATION_RATIO = 0.5
 TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 100
 NEPOCHS = 40
 TEXTBATCHES = 2000
+
+# LOG PARAMS
 INFO = 'haversine-wiki_utf8_exploded'
 DATE = str(dt.now().date())
 LOGSTR = f"{DATE}_model-{TOKEN_MODEL}_loss-{INFO}"
@@ -41,15 +54,16 @@ LOSSFCT = haversine_dist
 df = pd.read_parquet("wiki_utf8_exploded.parquet").dropna()
 texts = df["text"].values.tolist()
 labels = df[["lat",  "lon"]].astype(float).values.tolist()
-train_ratio = 0.78
-test_ratio = 0.17
-validation_ratio = 0.5
-x_train, x_test, y_train, y_test = train_test_split(texts,
-                                                    labels,
-                                                    test_size=1 - train_ratio)
-x_test, x_val, y_test, y_val = train_test_split(x_test,
-                                                y_test,
-                                                test_size=test_ratio/(test_ratio + validation_ratio))
+
+x_train, x_test, y_train, y_test = train_test_split(
+    texts,
+    labels,
+    test_size=1 - TRAIN_RATIO)
+
+x_test, x_val, y_test, y_val = train_test_split(
+    x_test,
+    y_test,
+    test_size=TEST_RATIO/(TEST_RATIO + VALIDATION_RATIO))
 
 tokenizer = TokenizerClass.from_pretrained(TOKEN_MODEL)
 train_dataset = StreamTokenizedDataset(x_train,
@@ -99,12 +113,12 @@ for epoch in range(0, NEPOCHS):
     ##################
     # Train in epoch #
     ##################
-    ### Train data process
-    logging.info(f"Load training data.")
+    # Train data process
+    logging.info("Load training data.")
     train_loader = iter(DataLoader(train_dataset,
                                    batch_size=TRAIN_BATCH_SIZE,
                                    num_workers=1))
-    logging.info(f"Starting training.")
+    logging.info("Starting training.")
     model.train()
     for iteration, batch in enumerate(train_loader):
         optim.zero_grad()
@@ -119,13 +133,16 @@ for epoch in range(0, NEPOCHS):
         train_loss = LOSSFCT(logits, labels)
         train_loss.backward()
         optim.step()
-        ### Logging
-        train_loss_float = float(train_loss) 
+        # Logging
+        train_loss_float = float(train_loss)
         train_losses.append(train_loss_float)
         writer.add_scalar(LOGSTR + "-train",
                           train_loss_float,
                           iteration)
-        logging.info(f"E:{epoch:3d}, I:{iteration:8d} TRAIN: {train_loss_float:10.3f}")
+        logging.info(
+            f"E:{epoch:3d}, \
+            I:{iteration:8d} \
+            TRAIN:{train_loss_float:10.3f}")
         del input_ids, attention_mask, labels, logits, train_loss
 
     #################
@@ -135,7 +152,7 @@ for epoch in range(0, NEPOCHS):
     test_loader = iter(DataLoader(test_dataset,
                                   batch_size=TEST_BATCH_SIZE,
                                   num_workers=1))
-    logging.info(f"Starting evaluation.")
+    logging.info("Starting evaluation.")
     model.eval()
     with torch.no_grad():
         for iteration, val_batch in enumerate(test_loader):
@@ -143,20 +160,26 @@ for epoch in range(0, NEPOCHS):
             val_attention_mask = val_batch['attention_mask'].to(device)
             val_labels = val_batch['labels'].to(device)
             val_outputs = model(
-                val_input_ids, 
-                attention_mask=val_attention_mask, 
-                labels=val_labels, 
+                val_input_ids,
+                attention_mask=val_attention_mask,
+                labels=val_labels,
                 output_hidden_states=True)
             val_logits = val_outputs.get('logits')
             val_loss = LOSSFCT(val_logits, val_labels)
-            ### Logging
+            # Logging
             val_loss_float = float(val_loss)
             val_losses.append(val_loss_float)
             writer.add_scalar(LOGSTR + "-test",
                               val_loss_float,
                               iteration)
-            logging.info(f"E:{epoch:3d}, I:{iteration:8d} TEST: {val_loss_float:10.3f}")
-            del val_input_ids, val_attention_mask, val_labels, val_logits, val_loss
+            logging.info(
+                f"E:{epoch:3d}, \
+                I:{iteration:8d} \
+                TEST:{val_loss_float:10.3f}")
+            del (val_input_ids,
+                 val_attention_mask,
+                 val_labels,
+                 val_logits, val_loss)
 
     ################
     # Finish epoch #
@@ -165,7 +188,10 @@ for epoch in range(0, NEPOCHS):
     avg_val_loss = np.mean(val_losses)
     writer.add_scalar(LOGSTR + "-train_epoch", avg_train_loss, epoch)
     writer.add_scalar(LOGSTR + "-test_epoch", avg_val_loss, epoch)
-    logging.info(f"E:{epoch:3d}, TRAIN: {avg_train_loss:10.3f}, TEST: {avg_val_loss:10.3f}")
+    logging.info(
+        f"E:{epoch:3d}, \
+        TRAIN: {avg_train_loss:10.3f}, \
+        TEST: {avg_val_loss:10.3f}")
     early_stopping(val_loss=avg_val_loss, model=model)
 
     if early_stopping.early_stop:
