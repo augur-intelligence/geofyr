@@ -49,7 +49,7 @@ LOGSTR = f"{DATE}_model-{TOKEN_MODEL}_loss-{INFO}"
 CHECKPOINT = TOKEN_MODEL
 CHECKPOINT_DIR = Path(f"checkpoints/{LOGSTR}")
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
-LOSSFCT = nn.HuberLoss
+LOSSFCT = nn.HuberLoss()
 LOGGING_LOSS = haversine_dist
 
 # PREP DATA LOADERS
