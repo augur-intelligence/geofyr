@@ -16,7 +16,7 @@ from six.moves.urllib.parse import quote
 # Storage
 CRED_PATH = "/".join([os.getcwd(), 'utils', 'storage.json'])
 fs = gcsfs.GCSFileSystem(token=CRED_PATH)
-storage_options={"token": CRED_PATH}
+storage_options = {"token": CRED_PATH}
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CRED_PATH
 
 # Operation
@@ -84,6 +84,7 @@ class StreamTokenizedDataset(torch.utils.data.Dataset):
 def haversine_dist(logits, labels):
     ## phi = lat = index 0, lambda = lon = index 1
     labels = DEG2RAD * labels
+    logits = DEG2RAD * logits
     d_sigma = 2 * (
         arcsin(
             sqrt(
