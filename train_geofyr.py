@@ -40,6 +40,7 @@ TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 100
 NEPOCHS = 40
 TEXTBATCHES = 2000
+DATA_PATH = "geo_data.parquet"
 
 # LOG PARAMS
 INFO = 'haversine-wiki_utf8_exploded'
@@ -51,7 +52,7 @@ CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 LOSSFCT = haversine_dist
 
 # PREP DATA LOADERS
-df = pd.read_parquet("wiki_utf8_exploded.parquet").dropna()
+df = pd.read_parquet(DATA_PATH).dropna()
 texts = df["text"].values.tolist()
 labels = df[["lat",  "lon"]].astype(float).values.tolist()
 
