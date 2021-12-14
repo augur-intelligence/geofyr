@@ -49,7 +49,8 @@ LOGSTR = f"{DATE}_model-{TOKEN_MODEL}_loss-{INFO}"
 CHECKPOINT = TOKEN_MODEL
 CHECKPOINT_DIR = Path(f"checkpoints/{LOGSTR}")
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
-LOSSFCT = haversine_dist
+LOSSFCT = nn.HuberLoss
+LOGGING_LOSS = haversine_dist
 
 # PREP DATA LOADERS
 df = pd.read_parquet(DATA_PATH).dropna()
@@ -135,6 +136,7 @@ for epoch in range(0, NEPOCHS):
         train_loss.backward()
         optim.step()
         # Logging
+        train_loss = LOGGING_LOSS(logits, labels)
         train_loss_float = float(train_loss)
         train_losses.append(train_loss_float)
         writer.add_scalar(LOGSTR + "-train",
@@ -166,7 +168,7 @@ for epoch in range(0, NEPOCHS):
                 labels=val_labels,
                 output_hidden_states=True)
             val_logits = val_outputs.get('logits')
-            val_loss = LOSSFCT(val_logits, val_labels)
+            val_loss = LOGGING_LOSS(val_logits, val_labels)
             # Logging
             val_loss_float = float(val_loss)
             val_losses.append(val_loss_float)
