@@ -19,10 +19,13 @@ from tensorboardX import SummaryWriter
 import logging
 from sklearn.model_selection import train_test_split
 from pathlib import Path
+import sys
+
 LOGDIR = Path("logs")
 LOGDIR.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(filename=LOGDIR.joinpath("train.log"),
                     level=logging.DEBUG)
+sys.stdout = open('logs/stdout', 'w')
 
 # MODEL PARAMS
 BASE_MODEL = 'distilbert-base-uncased'
