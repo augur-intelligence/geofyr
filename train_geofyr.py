@@ -96,12 +96,12 @@ model.num_labels = NUM_LABELS
 # model = nn.DataParallel(model)
 model.to(device)
 torch.save(model, CHECKPOINT_DIR.joinpath("model.pt"))
-GS_PATH = "logs/" + str(CHECKPOINT_DIR.joinpath("model.pt"))
+GS_PATH = "gs://geobert/" + str(CHECKPOINT_DIR.joinpath("model.pt"))
 fs.upload(str(CHECKPOINT_DIR.joinpath("model.pt")), str(GS_PATH))
 
 # INIT HELPERS
 optim = AdamW(model.parameters(), lr=5e-5)
-writer = SummaryWriter(log_dir="gs://geobert/logs")
+writer = SummaryWriter(log_dir="logs")
 early_stopping = EarlyStopping(
     patience=5,
     verbose=True,
