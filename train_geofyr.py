@@ -75,11 +75,13 @@ train_dataset = StreamTokenizedDataset(x_train,
                                        tokenizer,
                                        TEXTBATCHES,
                                        MAX_SEQ_LENGTH)
+
 test_dataset = StreamTokenizedDataset(x_test,
                                       y_test,
                                       tokenizer,
                                       TEXTBATCHES,
                                       MAX_SEQ_LENGTH)
+
 val_dataset = StreamTokenizedDataset(x_val,
                                      y_val,
                                      tokenizer,
@@ -94,7 +96,7 @@ model.num_labels = NUM_LABELS
 # model = nn.DataParallel(model)
 model.to(device)
 torch.save(model, CHECKPOINT_DIR.joinpath("model.pt"))
-GS_PATH = "gs://geobert/" + str(CHECKPOINT_DIR.joinpath("model.pt"))
+GS_PATH = "logs/" + str(CHECKPOINT_DIR.joinpath("model.pt"))
 fs.upload(str(CHECKPOINT_DIR.joinpath("model.pt")), str(GS_PATH))
 
 # INIT HELPERS
