@@ -123,7 +123,7 @@ for epoch in range(0, NEPOCHS):
     logging.info("Load training data.")
     train_loader = iter(DataLoader(train_dataset,
                                    batch_size=TRAIN_BATCH_SIZE,
-                                   num_workers=1))
+                                   num_workers=0))
     logging.info("Starting training.")
     model.train()
     for iteration, batch in enumerate(train_loader):
@@ -158,7 +158,7 @@ for epoch in range(0, NEPOCHS):
     # Test data process
     test_loader = iter(DataLoader(test_dataset,
                                   batch_size=TEST_BATCH_SIZE,
-                                  num_workers=1))
+                                  num_workers=0))
     logging.info("Starting evaluation.")
     model.eval()
     with torch.no_grad():
