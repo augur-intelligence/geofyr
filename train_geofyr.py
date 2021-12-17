@@ -101,7 +101,7 @@ fs.upload(str(CHECKPOINT_DIR.joinpath("model.pt")), str(GS_PATH))
 
 # INIT HELPERS
 optim = AdamW(model.parameters(), lr=5e-5)
-writer = SummaryWriter(log_dir="logs")
+writer = SummaryWriter(log_dir="gs://geobert/")
 early_stopping = EarlyStopping(
     patience=5,
     verbose=True,
