@@ -42,10 +42,10 @@ TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 100
 NEPOCHS = 40
 TEXTBATCHES = 2000
-DATA_PATH = "geo_data.parquet"
+DATA_PATH = "wiki_exploded_links.gz"
 
 # LOG PARAMS
-INFO = 'haversine-combined-data'
+INFO = 'wiki-utf-exploded-links'
 DATE = str(dt.now().date())
 LOGSTR = f"{DATE}_model-{TOKEN_MODEL}_loss-{INFO}"
 CHECKPOINT = TOKEN_MODEL
@@ -62,12 +62,16 @@ labels = df[["lat",  "lon"]].astype(float).values.tolist()
 x_train, x_test, y_train, y_test = train_test_split(
     texts,
     labels,
-    test_size=1 - TRAIN_RATIO)
+    test_size=1 - TRAIN_RATIO,
+    random_state=0
+)
 
 x_test, x_val, y_test, y_val = train_test_split(
     x_test,
     y_test,
-    test_size=TEST_RATIO/(TEST_RATIO + VALIDATION_RATIO))
+    test_size=TEST_RATIO/(TEST_RATIO + VALIDATION_RATIO),
+    random_state=0
+)
 
 tokenizer = TokenizerClass.from_pretrained(TOKEN_MODEL)
 train_dataset = StreamTokenizedDataset(x_train,
@@ -96,7 +100,7 @@ model.num_labels = NUM_LABELS
 # model = nn.DataParallel(model)
 model.to(device)
 torch.save(model, CHECKPOINT_DIR.joinpath("model.pt"))
-GS_PATH = "gs://geobert/" + str(CHECKPOINT_DIR.joinpath("model.pt"))
+GS_PATH = "gs://geobert/logs/" + str(CHECKPOINT_DIR.joinpath("model.pt"))
 fs.upload(str(CHECKPOINT_DIR.joinpath("model.pt")), str(GS_PATH))
 
 # INIT HELPERS
@@ -108,7 +112,9 @@ early_stopping = EarlyStopping(
     path=CHECKPOINT_DIR.joinpath("model.pt"),
     trace_func=logging.info)
 
-# START TRAINING
+##################
+# START TRAINING #
+##################
 for epoch in range(0, NEPOCHS):
     ###############
     # Start epoch #
