@@ -55,7 +55,7 @@ LOSSFCT = nn.HuberLoss()
 LOGGING_LOSS = haversine_dist
 
 # PREP DATA LOADERS
-df = pd.read_parquet(DATA_PATH).dropna()
+df = pd.read_csv(DATA_PATH).dropna()
 texts = df["text"].values.tolist()
 labels = df[["lat",  "lon"]].astype(float).values.tolist()
 
