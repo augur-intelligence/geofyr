@@ -42,6 +42,7 @@ TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 100
 NEPOCHS = 40
 TEXTBATCHES = 2000
+N_TEST_ITER = 10000
 DATA_PATH = "wiki_exploded_links.gz"
 
 # LOG PARAMS
@@ -55,7 +56,7 @@ LOSSFCT = nn.HuberLoss()
 LOGGING_LOSS = haversine_dist
 
 # PREP DATA LOADERS
-df = pd.read_csv(DATA_PATH, nrows=2000).dropna()
+df = pd.read_csv(DATA_PATH).dropna()
 texts = df["text"].values.tolist()
 labels = df[["lat",  "lon"]].astype(float).values.tolist()
 
@@ -152,7 +153,7 @@ for epoch in range(0, NEPOCHS):
             TRAIN:{train_loss_float:10.3f}")
         del input_ids, attention_mask, labels, logits, train_loss
 
-        if ((iteration + 1) % 10) == 0:
+        if ((iteration + 1) % N_TEST_ITER) == 0:
             ###########################
             # Eval in cont. iteration #
             ###########################
