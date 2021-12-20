@@ -18,17 +18,26 @@ class GeoModel():
         self.model = torch.load(
             self.model_string,
             map_location=torch.device('cpu'))
-        self.max_seq_lengt = max_seq_length
+        self.max_seq_length = max_seq_length
 
     def forward(self, text):
         self.current_text = text
+        # Split text to tokens
+        self.split_text = self.current_text.split(" ")
+        # Slice tokens and calc token metrics
+        self.input_tokens = len(self.split_text)
+        self.inference_tokens = min(self.input_tokens, self.max_seq_length)
+        self.inference_text = str(" ").join(
+            self.split_text[:self.inference_tokens])
+        self.unused_tokens = len(self.split_text[self.inference_tokens:])
+        # Tokenize
         tokenized_text = self.tokenizer(
-            self.current_text,
+            self.inference_text,
             truncation=True,
             padding=True,
             return_tensors='pt',
-            max_length=self.max_seq_lengt)
-
+            max_length=self.max_seq_length)
+        # Set to eval mode andd do inference
         self.model.eval()
         with torch.no_grad():
             self.output = self.model.forward(
@@ -39,7 +48,7 @@ class GeoModel():
     def predict_point(self):
         return self.output['logits'].numpy().squeeze()
 
-    def predict_areas(self, num_layers):
+    def predict_area(self, num_layers):
         return self.output['logits'].numpy().squeeze()
 
 

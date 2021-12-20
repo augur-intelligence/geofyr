@@ -81,6 +81,56 @@ class StreamTokenizedDataset(torch.utils.data.Dataset):
         return len(self.labels)
 
 
+class PreemptibleIterationHandler():
+    def __int__(self,
+                model,
+                n_iterations: int,
+                start_iteration: int,
+                n_epochs: int,
+                start_epoch: int,
+               train):
+        self.model = model
+        self.n_iterations = n_iterations
+        self.start_iteration = start_iteration
+        self.n_epochs = n_epochs
+        self.start_epoch = start_epoch
+
+
+class PreemptibleDataLoader():
+    def _init_(self,
+               dataset,
+               batchsize: int,
+               iteration: int):
+        self.dataset = dataset
+        self.batchsize = batchsize
+        self.iteration = iteration
+        self.startidx = self.batchsize * self.iteration
+        
+    def __getitem__(self, idx):
+        endidx = min(len(self.dataset), self.startidx + self.batchsize)
+        items = [self.dataset.__getitem__(i) for i in range(self.startidx, endidx)]
+        self.startidx += self.batchsize
+        keys = items[0].keys()
+        return {key: torch.tensor([item[key] for item in items]) for key in keys} 
+        
+    def __len__(self):
+        return (len(self.dataset) / self.batchsize) + 1
+
+
+class MyNumbers:
+    def __iter__(self):
+        self.a = 1
+        return self
+
+    def __next__(self):
+        if self.a <= 20:
+            x = self.a
+            self.a += 1
+            return x
+        else:
+            raise StopIteration
+
+
 def haversine_dist(logits, labels):
     ## phi = lat = index 0, lambda = lon = index 1
     labels = DEG2RAD * labels

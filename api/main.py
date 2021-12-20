@@ -53,25 +53,16 @@ def inference_point(request: GeoRequest,
     Infers the geographic location of a given text as a single point.
     For security reasons this endpoint only accepts the text as encrypted SSL payload.
     '''
-    # Split text to tokens
-    split_text = request.text.split(" ")
-
-    # Slice tokens and calc token metrics
-    input_tokens = len(split_text)
-    inference_tokens = min(input_tokens, MAX_SEQ_LENGTH)
-    inference_text = str(" ").join(split_text[:inference_tokens])
-    unused_tokens = len(split_text[inference_tokens:])
-
     # Inference
-    geomodel.forward(inference_text)
+    geomodel.forward(request.text)
     point_coordinate = geomodel.predict_point()
 
     # Compose respond
     coordinate = Coordinate(lat=point_coordinate[0], lon=point_coordinate[1])
     input_metrics = InputMetrics(
-        input_tokens=input_tokens,
-        inference_tokens=inference_tokens,
-        unused_tokens=unused_tokens
+        input_tokens=geomodel.input_tokens,
+        inference_tokens=geomodel.inference_tokens,
+        unused_tokens=geomodel.unused_tokens
     )
     return PointResponse(coordinate=coordinate, input_metrics=input_metrics)
 
