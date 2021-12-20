@@ -66,12 +66,12 @@ x_train, x_test, y_train, y_test = train_test_split(
     random_state=0
 )
 
-x_test, x_val, y_test, y_val = train_test_split(
-    x_test,
-    y_test,
-    test_size=TEST_RATIO/(TEST_RATIO + VALIDATION_RATIO),
-    random_state=0
-)
+# x_test, x_val, y_test, y_val = train_test_split(
+#     x_test,
+#     y_test,
+#     test_size=TEST_RATIO/(TEST_RATIO + VALIDATION_RATIO),
+#     random_state=0
+# )
 
 tokenizer = TokenizerClass.from_pretrained(TOKEN_MODEL)
 train_dataset = StreamTokenizedDataset(x_train,
@@ -85,12 +85,6 @@ test_dataset = StreamTokenizedDataset(x_test,
                                       tokenizer,
                                       TEXTBATCHES,
                                       MAX_SEQ_LENGTH)
-
-val_dataset = StreamTokenizedDataset(x_val,
-                                     y_val,
-                                     tokenizer,
-                                     TEXTBATCHES,
-                                     MAX_SEQ_LENGTH)
 
 # INIT MODEL
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
