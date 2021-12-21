@@ -6,7 +6,7 @@ from transformers import AdamW
 from torch import nn
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, RandomSampler, BatchSampler
 from datetime import datetime as dt
 from utils.utils import (
     StreamTokenizedDataset,
@@ -43,6 +43,7 @@ TEST_BATCH_SIZE = 100
 NEPOCHS = 40
 TEXTBATCHES = 2000
 N_TEST_ITER = 10000
+N_TEST_BATCHES = 1000
 DATA_PATH = "wiki_exploded_links.gz"
 
 # LOG PARAMS
@@ -56,7 +57,7 @@ LOSSFCT = nn.HuberLoss()
 LOGGING_LOSS = haversine_dist
 
 # PREP DATA LOADERS
-df = pd.read_csv(DATA_PATH).dropna()
+df = pd.read_csv("sources/wiki/data/wiki_exploded_links.gz", nrows=10000).dropna()
 texts = df["text"].values.tolist()
 labels = df[["lat",  "lon"]].astype(float).values.tolist()
 
@@ -66,13 +67,6 @@ x_train, x_test, y_train, y_test = train_test_split(
     test_size=1 - TRAIN_RATIO,
     random_state=0
 )
-
-# x_test, x_val, y_test, y_val = train_test_split(
-#     x_test,
-#     y_test,
-#     test_size=TEST_RATIO/(TEST_RATIO + VALIDATION_RATIO),
-#     random_state=0
-# )
 
 tokenizer = TokenizerClass.from_pretrained(TOKEN_MODEL)
 train_dataset = StreamTokenizedDataset(x_train,
@@ -86,6 +80,13 @@ test_dataset = StreamTokenizedDataset(x_test,
                                       tokenizer,
                                       TEXTBATCHES,
                                       MAX_SEQ_LENGTH)
+
+test_sampler = BatchSampler(
+    RandomSampler(test_dataset,
+                  replacement=True,
+                  num_samples=TEST_BATCH_SIZE*N_TEST_BATCHES),
+    batch_size=TEST_BATCH_SIZE,
+    drop_last=False)
 
 # INIT MODEL
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -122,9 +123,9 @@ for epoch in range(0, NEPOCHS):
     ##################
     # Train data process
     logging.info("Load training data.")
-    train_loader = iter(DataLoader(train_dataset,
-                                   batch_size=TRAIN_BATCH_SIZE,
-                                   num_workers=0))
+    train_loader = DataLoader(train_dataset,
+                              batch_size=TRAIN_BATCH_SIZE,
+                              num_workers=0)
     logging.info("Starting training.")
     model.train()
     for iteration, batch in enumerate(train_loader):
@@ -158,9 +159,10 @@ for epoch in range(0, NEPOCHS):
             # Eval in cont. iteration #
             ###########################
             # Test data process
-            test_loader = iter(DataLoader(test_dataset,
-                                          batch_size=TEST_BATCH_SIZE,
-                                          num_workers=0))
+            test_loader = DataLoader(test_dataset,
+                                     # batch_size=TEST_BATCH_SIZE,
+                                     num_workers=0,
+                                     batch_sampler=test_sampler)
             logging.info("Starting evaluation.")
             model.eval()
             with torch.no_grad():
