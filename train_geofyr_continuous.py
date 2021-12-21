@@ -44,6 +44,7 @@ NEPOCHS = 40
 TEXTBATCHES = 2000
 N_TEST_ITER = 10000
 N_TEST_BATCHES = 1000
+PATIENCE = 7
 DATA_PATH = "wiki_exploded_links.gz"
 
 # LOG PARAMS
@@ -103,7 +104,7 @@ fs.upload(str(CHECKPOINT_DIR.joinpath("model.pt")), str(GS_PATH))
 optim = AdamW(model.parameters(), lr=5e-5)
 writer = SummaryWriter(log_dir="gs://geobert/")
 early_stopping = EarlyStopping(
-    patience=5,
+    patience=PATIENCE,
     verbose=True,
     path=CHECKPOINT_DIR.joinpath("model.pt"),
     trace_func=logging.info)
@@ -207,7 +208,5 @@ for epoch in range(0, NEPOCHS):
 
             if early_stopping.early_stop:
                 logging.info("Early stopping")
-                break
-
-logging.info(f"Training finished in epoch {epoch}")
-model.eval()
+                logging.info(f"Training finished in epoch {epoch}")
+                quit()
