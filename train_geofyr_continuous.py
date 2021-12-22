@@ -57,8 +57,8 @@ LOSSFCT = nn.HuberLoss()
 LOGGING_LOSS = haversine_dist
 
 # PREP DATA LOADERS
-# df = pd.read_csv("sources/wiki/data/wiki_exploded_links.gz", nrows=100000).dropna()
-df = pd.read_csv(DATA_PATH, nrows=1000000).dropna()
+df = pd.read_csv("sources/wiki/data/wiki_exploded_links.gz", nrows=1000000).dropna()
+# df = pd.read_csv(DATA_PATH, nrows=1000000).dropna()
 texts = (df["text"]
          .values
          .tolist())
@@ -92,7 +92,7 @@ test_sampler = BatchSampler(
             SequentialSampler(test_dataset),
             batch_size=TEST_BATCH_SIZE,
             drop_last=False),
-        batch_size=TEST_BATCH_SIZE*N_TEST_BATCHES,
+        batch_size=N_TEST_BATCHES,
         drop_last=False).__iter__()
 
 # INIT MODEL
