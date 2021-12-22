@@ -118,6 +118,7 @@ early_stopping = EarlyStopping(
 ##################
 # START TRAINING #
 ##################
+EVALSTEP = 0
 for epoch in range(0, NEPOCHS):
     ###############
     # Start epoch #
@@ -204,15 +205,16 @@ for epoch in range(0, NEPOCHS):
             ################
             avg_train_loss = np.mean(train_losses)
             avg_val_loss = np.mean(val_losses)
-            writer.add_scalar(LOGSTR + "-train_epoch", avg_train_loss, epoch)
-            writer.add_scalar(LOGSTR + "-test_epoch", avg_val_loss, epoch)
+            writer.add_scalar(LOGSTR + "-train_epoch", avg_train_loss, EVALSTEP)
+            writer.add_scalar(LOGSTR + "-test_epoch", avg_val_loss, EVALSTEP)
             logging.info(
-                f"E:{epoch:3d}, \
+                f"E:{EVALSTEP:3d}, \
                 TRAIN: {avg_train_loss:10.3f}, \
                 TEST: {avg_val_loss:10.3f}")
+            EVALSTEP += 1
             early_stopping(val_loss=avg_val_loss, model=model)
 
             if early_stopping.early_stop:
                 logging.info("Early stopping")
-                logging.info(f"Training finished in epoch {epoch}")
+                logging.info(f"Training finished in evalstep {EVALSTEP}")
                 quit()
