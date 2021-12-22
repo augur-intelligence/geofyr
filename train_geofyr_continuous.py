@@ -119,11 +119,7 @@ early_stopping = EarlyStopping(
 # START TRAINING #
 ##################
 EVALSTEP = 0
-for epoch in range(0, NEPOCHS):
-    ###############
-    # Start epoch #
-    ###############
-    logging.info(f"Starting epoch {epoch}.")
+while True:
     train_losses = []
     val_losses = []
     ##################
@@ -135,8 +131,8 @@ for epoch in range(0, NEPOCHS):
                               batch_size=TRAIN_BATCH_SIZE,
                               num_workers=0)
     logging.info("Starting training.")
-    model.train()
     for iteration, batch in enumerate(train_loader):
+        model.train()
         optim.zero_grad()
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
@@ -157,8 +153,7 @@ for epoch in range(0, NEPOCHS):
                           train_loss_float,
                           iteration)
         logging.info(
-            f"E:{epoch:3d}, \
-            I:{iteration:8d} \
+            f"I:{iteration:8d} \
             TRAIN:{train_loss_float:10.3f}")
         del input_ids, attention_mask, labels, logits, train_loss
 
@@ -192,8 +187,7 @@ for epoch in range(0, NEPOCHS):
                                       val_loss_float,
                                       iteration)
                     logging.info(
-                        f"E:{epoch:3d}, \
-                        I:{iteration:8d} \
+                        f"I:{iteration:8d} \
                         TEST:{val_loss_float:10.3f}")
                     del (val_input_ids,
                          val_attention_mask,
