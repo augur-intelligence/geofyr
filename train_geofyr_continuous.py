@@ -59,7 +59,7 @@ LOGGING_LOSS = haversine_dist
 
 # PREP DATA LOADERS
 # df = pd.read_csv("sources/wiki/data/wiki_exploded_links.gz", nrows=100000).dropna()
-df = pd.read_csv(DATA_PATH, nrows=100000).dropna()
+df = pd.read_csv(DATA_PATH, nrows=1000000).dropna()
 texts = (df["text"]
          .values
          .tolist())
