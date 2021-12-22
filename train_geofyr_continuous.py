@@ -41,8 +41,8 @@ TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 100
 NEPOCHS = 40
 TEXTBATCHES = 2000
-N_TEST_INTERVALL = 100
-N_TEST_BATCHES = 10
+N_TEST_INTERVALL = 1000
+N_TEST_BATCHES = 100
 PATIENCE = 7
 DATA_PATH = "wiki_exploded_links.gz"
 
@@ -58,7 +58,7 @@ LOGGING_LOSS = haversine_dist
 
 # PREP DATA LOADERS
 # df = pd.read_csv("sources/wiki/data/wiki_exploded_links.gz", nrows=1000000).dropna()
-df = pd.read_csv(DATA_PATH, nrows=1000000).dropna()
+df = pd.read_csv(DATA_PATH).dropna()
 texts = (df["text"]
          .values
          .tolist())
@@ -212,6 +212,8 @@ for epoch in range(0, NEPOCHS):
                 TRAIN: {avg_train_loss:10.3f}, \
                 TEST: {avg_val_loss:10.3f}")
             EVALSTEP += 1
+            train_losses = []
+            val_losses = []
             early_stopping(val_loss=avg_val_loss, model=model)
 
             if early_stopping.early_stop:
