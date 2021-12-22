@@ -14,7 +14,6 @@ from utils.utils import (
     fs,
     haversine_dist
 )
-# import webdataset as wds
 from tensorboardX import SummaryWriter
 import logging
 from sklearn.model_selection import train_test_split
@@ -42,8 +41,8 @@ TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 100
 NEPOCHS = 40
 TEXTBATCHES = 2000
-N_TEST_ITER = 1000
-N_TEST_BATCHES = 100
+N_TEST_INTERVALL = 100
+N_TEST_BATCHES = 10
 PATIENCE = 7
 DATA_PATH = "wiki_exploded_links.gz"
 
@@ -162,7 +161,7 @@ for epoch in range(0, NEPOCHS):
             TRAIN:{train_loss_float:10.3f}")
         del input_ids, attention_mask, labels, logits, train_loss
 
-        if ((iteration + 1) % N_TEST_ITER) == 0:
+        if ((iteration + 1) % N_TEST_INTERVALL) == 0:
             ###########################
             # Eval in cont. iteration #
             ###########################
