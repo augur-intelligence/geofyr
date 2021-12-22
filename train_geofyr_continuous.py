@@ -131,8 +131,8 @@ while True:
                               batch_size=TRAIN_BATCH_SIZE,
                               num_workers=0)
     logging.info("Starting training.")
+    model.train()
     for iteration, batch in enumerate(train_loader):
-        model.train()
         optim.zero_grad()
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
@@ -193,9 +193,9 @@ while True:
                          val_labels,
                          val_logits, val_loss)
 
-            ################
-            # Finish epoch #
-            ################
+            ###############
+            # Finish eval #
+            ###############
             avg_train_loss = np.mean(train_losses)
             avg_val_loss = np.mean(val_losses)
             writer.add_scalar(LOGSTR + "-train_eval", avg_train_loss, EVALSTEP)
@@ -207,6 +207,7 @@ while True:
             EVALSTEP += 1
             train_losses = []
             val_losses = []
+            model.train()
             early_stopping(val_loss=avg_val_loss, model=model)
 
             if early_stopping.early_stop:
