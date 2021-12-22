@@ -6,7 +6,7 @@ from transformers import AdamW
 from torch import nn
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, RandomSampler, BatchSampler
+from torch.utils.data import DataLoader, SequentialSampler, BatchSampler
 from datetime import datetime as dt
 from utils.utils import (
     StreamTokenizedDataset,
@@ -42,8 +42,8 @@ TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 100
 NEPOCHS = 40
 TEXTBATCHES = 2000
-N_TEST_ITER = 10000
-N_TEST_BATCHES = 1000
+N_TEST_ITER = 1000
+N_TEST_BATCHES = 100
 PATIENCE = 7
 DATA_PATH = "wiki_exploded_links.gz"
 
@@ -58,9 +58,15 @@ LOSSFCT = nn.HuberLoss()
 LOGGING_LOSS = haversine_dist
 
 # PREP DATA LOADERS
+# df = pd.read_csv("sources/wiki/data/wiki_exploded_links.gz", nrows=100000).dropna()
 df = pd.read_csv(DATA_PATH).dropna()
-texts = df["text"].values.tolist()
-labels = df[["lat",  "lon"]].astype(float).values.tolist()
+texts = (df["text"]
+         .values
+         .tolist())
+labels = (df[["lat",  "lon"]]
+          .astype(float)
+          .values
+          .tolist())
 
 x_train, x_test, y_train, y_test = train_test_split(
     texts,
@@ -83,11 +89,12 @@ test_dataset = StreamTokenizedDataset(x_test,
                                       MAX_SEQ_LENGTH)
 
 test_sampler = BatchSampler(
-    RandomSampler(test_dataset,
-                  replacement=True,
-                  num_samples=TEST_BATCH_SIZE*N_TEST_BATCHES),
-    batch_size=TEST_BATCH_SIZE,
-    drop_last=False)
+        BatchSampler(
+            SequentialSampler(test_dataset),
+            batch_size=TEST_BATCH_SIZE,
+            drop_last=False),
+        batch_size=TEST_BATCH_SIZE*N_TEST_BATCHES,
+        drop_last=False).__iter__()
 
 # INIT MODEL
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -163,7 +170,7 @@ for epoch in range(0, NEPOCHS):
             test_loader = DataLoader(test_dataset,
                                      # batch_size=TEST_BATCH_SIZE,
                                      num_workers=0,
-                                     batch_sampler=test_sampler)
+                                     batch_sampler=next(test_sampler))
             logging.info("Starting evaluation.")
             model.eval()
             with torch.no_grad():
