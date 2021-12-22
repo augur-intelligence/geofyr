@@ -163,7 +163,6 @@ while True:
             ###########################
             # Test data process
             test_loader = DataLoader(test_dataset,
-                                     # batch_size=TEST_BATCH_SIZE,
                                      num_workers=0,
                                      batch_sampler=next(test_sampler))
             logging.info("Starting evaluation.")
@@ -199,8 +198,8 @@ while True:
             ################
             avg_train_loss = np.mean(train_losses)
             avg_val_loss = np.mean(val_losses)
-            writer.add_scalar(LOGSTR + "-train_epoch", avg_train_loss, EVALSTEP)
-            writer.add_scalar(LOGSTR + "-test_epoch", avg_val_loss, EVALSTEP)
+            writer.add_scalar(LOGSTR + "-train_eval", avg_train_loss, EVALSTEP)
+            writer.add_scalar(LOGSTR + "-test_eval", avg_val_loss, EVALSTEP)
             logging.info(
                 f"E:{EVALSTEP:3d}, \
                 TRAIN: {avg_train_loss:10.3f}, \
