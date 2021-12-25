@@ -43,7 +43,7 @@ NEPOCHS = 40
 TEXTBATCHES = 2000
 N_TEST_INTERVALL = 1000
 N_TEST_BATCHES = 100
-PATIENCE = 25
+PATIENCE = 30
 DATA_PATH = "wiki_exploded_links.gz"
 
 # LOG PARAMS
@@ -103,12 +103,12 @@ model.num_labels = NUM_LABELS
 # model = nn.DataParallel(model)
 model.to(device)
 torch.save(model, CHECKPOINT_DIR.joinpath("model.pt"))
-GS_PATH = "gs://geobert/logs/" + str(CHECKPOINT_DIR.joinpath("model.pt"))
+GS_PATH = "gs://geobert" + str(CHECKPOINT_DIR.joinpath("model.pt"))
 fs.upload(str(CHECKPOINT_DIR.joinpath("model.pt")), str(GS_PATH))
 
 # INIT HELPERS
 optim = AdamW(model.parameters(), lr=5e-5)
-writer = SummaryWriter(log_dir="gs://geobert/")
+writer = SummaryWriter(log_dir="gs://geobert/logs/")
 early_stopping = EarlyStopping(
     patience=PATIENCE,
     verbose=True,
