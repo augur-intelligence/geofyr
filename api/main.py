@@ -5,17 +5,29 @@ from starlette.status import HTTP_403_FORBIDDEN
 from starlette.responses import RedirectResponse
 
 from transformers import DistilBertTokenizerFast
+from sklearn.neighbors import KernelDensity
 
 from model import GeoModel
-from model import Coordinate, InputMetrics, PointResponse, GeoRequest
+from model import (
+    Coordinate,
+    InputMetrics,
+    PointResponse,
+    AreaResponse,
+    GeoRequest)
 from model import API_DESCRIPTION_STR
 from model import MAX_SEQ_LENGTH, BASE_MODEL, TOKEN_MODEL, API_VERSION
+
+kde = KernelDensity(
+    kernel='gaussian',
+    metric='haversine',
+    bandwidth=0.006)
 
 geomodel = GeoModel(
     model_string=BASE_MODEL,
     tokenizer_string=TOKEN_MODEL,
     tokenizer_class=DistilBertTokenizerFast,
-    max_seq_length=MAX_SEQ_LENGTH)
+    max_seq_length=MAX_SEQ_LENGTH,
+    pdf=kde)
 
 API_KEYS = [
     "geo",
@@ -66,3 +78,27 @@ def inference_point(request: GeoRequest,
     )
     return PointResponse(coordinate=coordinate, input_metrics=input_metrics)
 
+
+@app.post("/inference/area", response_model=AreaResponse)
+def inference_area(request: GeoRequest,
+                   api_key: APIKey = Depends(validate_api_key)
+                   ):
+    '''
+    Infers the geographic location of a given text as a single point.
+    For security reasons this endpoint only accepts the text as encrypted SSL payload.
+    '''
+    # Inference
+    geomodel.forward(request.text)
+    polygon, bbox = geomodel.predict_area()
+
+    # Compose respond
+    polygon_list = [Coordinate(lat=coord[0], lon=coord[1]) for coord in polygon]
+    bbox_list = [Coordinate(lat=coord[0], lon=coord[1]) for coord in bbox]
+    input_metrics = InputMetrics(
+        input_tokens=geomodel.input_tokens,
+        inference_tokens=geomodel.inference_tokens,
+        unused_tokens=geomodel.unused_tokens
+    )
+    return AreaResponse(area_polygon=polygon_list,
+                        area_bbox=bbox_list,
+                        input_metrics=input_metrics)

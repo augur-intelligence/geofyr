@@ -1,6 +1,8 @@
 import torch
 from pydantic import BaseModel, Field
 from typing import List
+from scipy.spatial import ConvexHull
+import numpy as np
 
 BASE_MODEL = 'model/model.pt'
 TOKEN_MODEL = 'distilbert-base-uncased'
@@ -10,7 +12,7 @@ MAX_SEQ_LENGTH = 200
 
 
 class GeoModel():
-    def __init__(self, model_string, tokenizer_string, tokenizer_class, max_seq_length):
+    def __init__(self, model_string, tokenizer_string, tokenizer_class, max_seq_length, pdf):
         self.model_string = model_string
         self.tokenizer_string = tokenizer_string
         self.tokenizer_class = tokenizer_class
@@ -19,6 +21,8 @@ class GeoModel():
             self.model_string,
             map_location=torch.device('cpu'))
         self.max_seq_length = max_seq_length
+        self.pdf = pdf
+        self.current_text = ''
 
     def forward(self, text):
         self.current_text = text
@@ -48,8 +52,42 @@ class GeoModel():
     def predict_point(self):
         return self.output['logits'].numpy().squeeze()
 
-    def predict_area(self, num_layers):
-        return self.output['logits'].numpy().squeeze()
+    def predict_area(self):
+        # Get pooled output from last hidden state
+        last_hidden_state = self.output['hidden_states'][-1]
+        hidden_state = last_hidden_state
+        pooled_output = hidden_state[:, 0]
+        rand_locs = []
+        pooled_output_dim = pooled_output.shape[1]
+        with torch.no_grad():
+            self.model.eval()
+            # Mask every dim of pooled output before predicition
+            # Gather all outputs from masked predicitons
+            for i in range(pooled_output_dim):
+                ones = torch.ones_like(pooled_output)
+                ones[0, i] = 0
+                masked_output = ones * pooled_output
+                pre_clf_output = self.model.pre_classifier(masked_output)
+                relu_output = torch.nn.ReLU()(pre_clf_output)
+                rand_loc = (self
+                            .model
+                            .classifier(relu_output)
+                            .cpu()
+                            .detach()
+                            .numpy()
+                            .squeeze())
+                rand_locs.append(rand_loc)
+
+        # Fit PDF on masked output and sample.
+        # Make sure dist metric is haversine
+        self.pdf.fit(np.radians(rand_locs))
+        kde_sample = np.rad2deg(self.pdf.sample(1000))
+        # Get convex hull and bounding box of sample
+        kde_area_hull = ConvexHull(kde_sample)
+        polygon = kde_area_hull.points[kde_area_hull.vertices]
+        bbox = [[polygon[:, 0].min(), polygon[:, 1].min()],
+                [polygon[:, 0].max(), polygon[:, 1].max()]]
+        return polygon.tolist(), bbox
 
 
 class Coordinate(BaseModel):
@@ -97,7 +135,22 @@ class PointResponse(BaseModel):
     meta: Meta = Meta(
         api_version=API_VERSION, 
         model_version=MODEL_VERSION)
-    coordinate: Coordinate
+    coordinate: Coordinate = Field(...,
+                              description="The predicted coordinate of the texts location."
+                              )
+    input_metrics: InputMetrics
+
+
+class AreaResponse(BaseModel):
+    meta: Meta = Meta(
+        api_version=API_VERSION, 
+        model_version=MODEL_VERSION)
+    area_polygon: List[Coordinate] = Field(...,
+                              description="Array of coordinates, representing the polygon of the convex hull of the 90 percent confidence area, calibrated on the test data."
+                              )
+    area_bbox: List[Coordinate] = Field(...,
+                              description="Array of coordinates, representing the bounding box of the polygon."
+                              )
     input_metrics: InputMetrics
 
 
