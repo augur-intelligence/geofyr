@@ -6,7 +6,10 @@ from transformers import AdamW
 from torch import nn
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, SequentialSampler, BatchSampler
+from torch.utils.data import (
+    DataLoader,
+    SequentialSampler,
+    BatchSampler)
 from datetime import datetime as dt
 from utils.utils import (
     StreamTokenizedDataset,
@@ -18,7 +21,6 @@ from tensorboardX import SummaryWriter
 import logging
 from sklearn.model_selection import train_test_split
 from pathlib import Path
-
 
 LOGDIR = Path("logs")
 LOGDIR.mkdir(parents=True, exist_ok=True)
@@ -34,8 +36,8 @@ MAX_SEQ_LENGTH = 200
 NUM_LABELS = 2
 
 # TRAIN PARAMS
-TRAIN_RATIO = 0.9
-TEST_RATIO = 0.1
+TRAIN_RATIO = 0.75
+TEST_RATIO = 0.25
 VALIDATION_RATIO = 0.0
 TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 100
