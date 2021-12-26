@@ -4,7 +4,7 @@ from typing import List
 from scipy.spatial import ConvexHull
 import numpy as np
 
-BASE_MODEL = 'model/model.pt'
+BASE_MODEL = 'model/checkpoints-2021-12-22_model-distilbert-base-uncased_loss-wiki-utf-exploded-links-model-2.pt'
 TOKEN_MODEL = 'distilbert-base-uncased'
 API_VERSION = '1.0'
 MODEL_VERSION = '1.0'
@@ -103,7 +103,7 @@ class Coordinate(BaseModel):
                        )
 
 
-class Meta(BaseModel):
+class MetaInfo(BaseModel):
     api_version: str = Field(...,
                              example='1.0',
                              description="Version number of the API."
@@ -132,17 +132,17 @@ class InputMetrics(BaseModel):
 
 
 class PointResponse(BaseModel):
-    meta: Meta = Meta(
+    meta: MetaInfo = MetaInfo(
         api_version=API_VERSION, 
         model_version=MODEL_VERSION)
     coordinate: Coordinate = Field(...,
-                              description="The predicted coordinate of the texts location."
+                                   description="The predicted coordinate of the texts location."
                               )
     input_metrics: InputMetrics
 
 
 class AreaResponse(BaseModel):
-    meta: Meta = Meta(
+    meta: MetaInfo = MetaInfo(
         api_version=API_VERSION, 
         model_version=MODEL_VERSION)
     area_polygon: List[Coordinate] = Field(...,
@@ -162,8 +162,4 @@ class GeoRequest(BaseModel):
                       description="Text to infer geograpic location from. Maximum 200 tokens. A token is everything between two whitespaces. Make sure the string is web safe and all characters are escpaed properly."
                       )
 
-
-API_DESCRIPTION_STR = """
-    GEOFYR infers the geographic location of every kind of text.
-    GEOFYR is based on state-of-the-art Natural Language Processing and smartly infers the to location of the content of a text based on its meaning and semamntic. GEOFYR is able to process Literature, News, Historical text and everything else. If there is any clue where the action of a text occurs, GEOFYR will find it.
-"""
+API_DESCRIPTION_STR = open("text/api_desc").read()
