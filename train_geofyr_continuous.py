@@ -36,8 +36,8 @@ MAX_SEQ_LENGTH = 200
 NUM_LABELS = 2
 
 # TRAIN PARAMS
-TRAIN_RATIO = 0.75
-TEST_RATIO = 0.25
+TRAIN_RATIO = 0.99
+TEST_RATIO = 0.01
 VALIDATION_RATIO = 0.0
 TRAIN_BATCH_SIZE = 100
 TEST_BATCH_SIZE = 100
@@ -159,59 +159,59 @@ while True:
             TRAIN:{train_loss_float:10.3f}")
         del input_ids, attention_mask, labels, logits, train_loss
 
-        if ((iteration + 1) % N_TEST_INTERVALL) == 0:
-            ###########################
-            # Eval in cont. iteration #
-            ###########################
-            # Test data process
-            test_loader = DataLoader(test_dataset,
-                                     num_workers=0,
-                                     batch_sampler=next(test_sampler))
-            logging.info("Starting evaluation.")
-            model.eval()
-            with torch.no_grad():
-                for iteration, val_batch in enumerate(test_loader):
-                    val_input_ids = val_batch['input_ids'].to(device)
-                    val_attention_mask = val_batch['attention_mask'].to(device)
-                    val_labels = val_batch['labels'].to(device)
-                    val_outputs = model(
-                        val_input_ids,
-                        attention_mask=val_attention_mask,
-                        labels=val_labels,
-                        output_hidden_states=True)
-                    val_logits = val_outputs.get('logits')
-                    val_loss = LOGGING_LOSS(val_logits, val_labels)
-                    # Logging
-                    val_loss_float = float(val_loss)
-                    val_losses.append(val_loss_float)
-                    writer.add_scalar(LOGSTR + "-test",
-                                      val_loss_float,
-                                      iteration)
-                    logging.info(
-                        f"I:{iteration:8d} \
-                        TEST:{val_loss_float:10.3f}")
-                    del (val_input_ids,
-                         val_attention_mask,
-                         val_labels,
-                         val_logits, val_loss)
+#         if ((iteration + 1) % N_TEST_INTERVALL) == 0:
+#             ###########################
+#             # Eval in cont. iteration #
+#             ###########################
+#             # Test data process
+#             test_loader = DataLoader(test_dataset,
+#                                      num_workers=0,
+#                                      batch_sampler=next(test_sampler))
+#             logging.info("Starting evaluation.")
+#             model.eval()
+#             with torch.no_grad():
+#                 for iteration, val_batch in enumerate(test_loader):
+#                     val_input_ids = val_batch['input_ids'].to(device)
+#                     val_attention_mask = val_batch['attention_mask'].to(device)
+#                     val_labels = val_batch['labels'].to(device)
+#                     val_outputs = model(
+#                         val_input_ids,
+#                         attention_mask=val_attention_mask,
+#                         labels=val_labels,
+#                         output_hidden_states=True)
+#                     val_logits = val_outputs.get('logits')
+#                     val_loss = LOGGING_LOSS(val_logits, val_labels)
+#                     # Logging
+#                     val_loss_float = float(val_loss)
+#                     val_losses.append(val_loss_float)
+#                     writer.add_scalar(LOGSTR + "-test",
+#                                       val_loss_float,
+#                                       iteration)
+#                     logging.info(
+#                         f"I:{iteration:8d} \
+#                         TEST:{val_loss_float:10.3f}")
+#                     del (val_input_ids,
+#                          val_attention_mask,
+#                          val_labels,
+#                          val_logits, val_loss)
 
-            ################
-            # Finish epoch #
-            ################
-            avg_train_loss = np.mean(train_losses)
-            avg_val_loss = np.mean(val_losses)
-            writer.add_scalar(LOGSTR + "-train_eval", avg_train_loss, EVALSTEP)
-            writer.add_scalar(LOGSTR + "-test_eval", avg_val_loss, EVALSTEP)
-            logging.info(
-                f"E:{EVALSTEP:3d}, \
-                TRAIN: {avg_train_loss:10.3f}, \
-                TEST: {avg_val_loss:10.3f}")
-            EVALSTEP += 1
-            train_losses = []
-            val_losses = []
-            early_stopping(val_loss=avg_val_loss, model=model)
+#             ################
+#             # Finish epoch #
+#             ################
+#             avg_train_loss = np.mean(train_losses)
+#             avg_val_loss = np.mean(val_losses)
+#             writer.add_scalar(LOGSTR + "-train_eval", avg_train_loss, EVALSTEP)
+#             writer.add_scalar(LOGSTR + "-test_eval", avg_val_loss, EVALSTEP)
+#             logging.info(
+#                 f"E:{EVALSTEP:3d}, \
+#                 TRAIN: {avg_train_loss:10.3f}, \
+#                 TEST: {avg_val_loss:10.3f}")
+#             EVALSTEP += 1
+#             train_losses = []
+#             val_losses = []
+#             early_stopping(val_loss=avg_val_loss, model=model)
 
-            if early_stopping.early_stop:
-                logging.info("Early stopping")
-                logging.info(f"Training finished in evalstep {EVALSTEP}")
-                quit()
+#             if early_stopping.early_stop:
+#                 logging.info("Early stopping")
+#                 logging.info(f"Training finished in evalstep {EVALSTEP}")
+#                 quit()
