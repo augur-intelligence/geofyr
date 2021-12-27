@@ -159,7 +159,10 @@ while True:
             TRAIN:{train_loss_float:10.3f}")
         del input_ids, attention_mask, labels, logits, train_loss
 
-#         if ((iteration + 1) % N_TEST_INTERVALL) == 0:
+        if ((iteration + 1) % N_TEST_INTERVALL) == 0:
+            torch.save(model, CHECKPOINT_DIR.joinpath("model.pt"))
+            fs.upload(str(CHECKPOINT_DIR.joinpath("model.pt")), str(GS_PATH))
+            
 #             ###########################
 #             # Eval in cont. iteration #
 #             ###########################
